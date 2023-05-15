@@ -5,9 +5,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { SwaggerModule } from '@nestjs/swagger';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors();
@@ -16,6 +17,7 @@ async function bootstrap() {
   // app.useStaticAssets(join(__dirname, '..', 'upload'));
   ServeStaticModule.forRoot({ rootPath: join(__dirname, '..', 'upload') });
 
+  console.log('port : ', process.env.PORT);
   const PORT = process.env.PORT || 3030;
   await app.listen(PORT, () => console.log(`Application running on`));
 

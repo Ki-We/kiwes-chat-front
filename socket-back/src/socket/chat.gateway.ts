@@ -1,22 +1,22 @@
+import { Logger } from '@nestjs/common';
 import {
-  ConnectedSocket,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
+  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Socket, Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
     credentials: true,
-    origin: [process.env.CLIENT_HOST],
+    origin: ['http://localhost:3000'],
   },
 })
-export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server: Server;
+export class ChatGateway {
+  private logger = new Logger('Gateway');
+
+  @WebSocketServer() server: Server;
 
   handleConnection(@ConnectedSocket() client: Socket) {
     console.log(`${client.id} 소켓 연결`);
@@ -37,11 +37,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // 채팅방 안에 사람에게 메시지 보내기
   @SubscribeMessage('msgToServer')
   handleMessage(client: Socket, payload): void {
-    const rooms = client.rooms;
-    const roomArray = Array.from(rooms);
-    console.log(roomArray[roomArray.length - 1]);
-    this.server
-      .to(roomArray[roomArray.length - 1])
-      .emit('msgToClient', payload);
+    console.log(payload);
+    console.log(client);
   }
 }
