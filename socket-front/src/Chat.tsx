@@ -17,6 +17,10 @@ export default function Chat() {
     socket.on("msgList", (data) => {
       setMessage(data);
     });
+    socket.on("error", (data) => {
+      alert(data.msg);
+      window.location.href = "/";
+    });
   }, []);
   useEffect(() => {
     socket.on("sendMsg", (data: Message) => {

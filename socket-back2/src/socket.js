@@ -27,7 +27,6 @@ module.exports = (server) => {
 
     socket.on("nickname", async (info) => {
       nicknameList[socket.id] = info.nickname;
-      console.log("nicknameList : ", nicknameList);
     });
     socket.on("createRoom", async (data) => {
       await Room.create(data).catch((err) =>
@@ -38,7 +37,12 @@ module.exports = (server) => {
       socket.emit("roomList", { rooms });
     });
     socket.on("enterRoom", async (data) => {
+      if (nicknameList[socket.id] == undefined) {
+        socket.emit("error", { msg: "닉네임 없이는 접근할 수 없습니다." });
+        return;
+      }
       socket.leave("lobby");
+
       socket.join(data.id);
       const date = new Date();
       const time =
