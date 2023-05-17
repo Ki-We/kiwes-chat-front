@@ -6,22 +6,31 @@ import { Link } from "react-router-dom";
 
 const App = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const nicknameRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     socket.emit("entry", {});
     socket.on("roomList", (data) => setRooms(data.rooms));
   }, []);
-  const inputRef = useRef<HTMLInputElement>(null);
   const createRoom = () => {
     if (inputRef.current == null) return;
 
     socket?.emit("createRoom", { name: inputRef.current.value });
   };
-  const enterRoom = (id: number) => {
-    socket.emit("enterRoom", { id });
+  const sendNickname = () => {
+    if (nicknameRef.current == null) return;
+    socket.emit("nickname", { nickname: nicknameRef.current.value });
   };
 
   return (
     <>
+      <div>
+        <input type="text" ref={nicknameRef} placeholder="닉네임" />
+        <button type="button" onClick={sendNickname}>
+          설정
+        </button>
+      </div>
+
       <div>
         <input
           type="text"

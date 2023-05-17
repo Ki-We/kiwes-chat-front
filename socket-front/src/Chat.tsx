@@ -10,11 +10,17 @@ export default function Chat() {
 
   useEffect(() => {
     socket.emit("enterRoom", { id });
+
+    socket.on("msgList", (data) => {
+      setMessage(data);
+    });
+  }, []);
+  useEffect(() => {
     socket.on("sendMsg", (data: Message) => {
       const newList = [...message, data];
       setMessage(newList);
     });
-  }, []);
+  }, [message]);
 
   const sendMsg = () => {
     if (inputRef.current == null) return;

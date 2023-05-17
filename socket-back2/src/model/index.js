@@ -19,5 +19,17 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 db.Room = require("./Room")(sequelize, Sequelize);
+db.Chat = require("./Chat")(sequelize, Sequelize);
+
+db.Room.hasOne(db.Chat, {
+  foreignKey: "room_ID",
+  sourceKey: "id",
+  onDelete: "cascade",
+});
+db.Chat.belongsTo(db.Room, {
+  foreignKey: "id",
+  sourceKey: "room_ID",
+  onDelete: "cascade",
+});
 
 module.exports = db;

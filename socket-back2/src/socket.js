@@ -1,10 +1,11 @@
-const { Room } = require("./model");
+const { Room, Chat } = require("./model");
 
 const catch_error = (err, res, msg) => {
   console.error(err);
   console.log(`err : `, msg);
   res.status(400).send({ msg });
 };
+const nicknameList = {};
 module.exports = (server) => {
   const io = require("socket.io")(server, {
     cors: {
@@ -24,6 +25,10 @@ module.exports = (server) => {
       socket.emit("roomList", { rooms });
     });
 
+    socket.on("nickname", async (info) => {
+      nicknameList[socket.id] = info.nickname;
+      console.log("nicknameList : ", nicknameList);
+    });
     socket.on("createRoom", async (data) => {
       await Room.create(data).catch((err) =>
         catch_error(err, res, "Failed: create room")
@@ -38,9 +43,18 @@ module.exports = (server) => {
       const date = new Date();
       const time =
         date.getHours() + " : " + date.getMinutes() + " : " + date.getSeconds();
+
+      const initChat = { room_ID: data.id, chat: "[]" };
+      const chatInfo = await Chat.findCreateFind({
+        initChat,
+        where: { room_ID: data.id },
+      });
+      const msgs = JSON.parse(chatInfo[0].chat);
+
+      io.in(data.id).emit("msgList", msgs);
       io.in(data.id).emit("sendMsg", {
         writer: "시스템",
-        msg: `welcome ${socket.id}`,
+        msg: `welcome ${nicknameList[socket.id] || socket.id}`,
         time,
       });
     });
@@ -49,14 +63,26 @@ module.exports = (server) => {
       const time =
         date.getHours() + " : " + date.getMinutes() + " : " + date.getSeconds();
       const name = socket.rooms.values().next().value;
-      io.in(name).emit("sendMsg", {
-        writer: socket.id,
+      const info = {
+        writer: nicknameList[socket.id] || socket.id,
         msg: data.msg,
         time,
-      });
+      };
+
+      const chat = await Chat.findOne({ room_ID: name });
+      const msgs = JSON.parse(chat.chat);
+      msgs.push(info);
+
+      await Chat.update(
+        { chat: JSON.stringify(msgs) },
+        { where: { id: chat.id } }
+      );
+
+      io.in(name).emit("sendMsg", info);
     });
 
     socket.on("disconnect", function () {
+      delete nicknameList[socket.id];
       console.log("Server Socket Disconnected");
     });
   });
