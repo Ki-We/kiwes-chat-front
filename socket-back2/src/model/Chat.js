@@ -11,6 +11,7 @@ module.exports = (Sequelize, DataTypes) => {
       chat: {
         type: DataTypes.TEXT,
         allowNull: false,
+        defaultValue: "[]",
       },
     },
     {

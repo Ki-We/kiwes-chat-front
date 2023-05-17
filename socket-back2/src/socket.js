@@ -53,15 +53,22 @@ module.exports = (server) => {
 
       io.in(data.id).emit("msgList", msgs);
       io.in(data.id).emit("sendMsg", {
-        writer: "시스템",
-        msg: `welcome ${nicknameList[socket.id] || socket.id}`,
+        writer: "system",
+        msg: `${nicknameList[socket.id] || socket.id}님이 입장하셨습니다.`,
         time,
       });
     });
     socket.on("sendMsg", async (data) => {
       const date = new Date();
-      const time =
-        date.getHours() + " : " + date.getMinutes() + " : " + date.getSeconds();
+      let hour = date.getHours();
+      let time = "";
+      if (hour > 12) {
+        hour -= 12;
+        time += "오후";
+      } else time += "오전";
+
+      time += ` ${hour}:${date.getMinutes()}`;
+
       const name = socket.rooms.values().next().value;
       const info = {
         writer: nicknameList[socket.id] || socket.id,

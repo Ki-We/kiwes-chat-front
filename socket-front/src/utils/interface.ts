@@ -8,5 +8,3 @@ export interface Message {
   msg: string;
   time: string;
 }
-
-export default {};
