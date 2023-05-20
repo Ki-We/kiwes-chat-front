@@ -8,3 +8,8 @@ export interface Message {
   msg: string;
   time: string;
 }
+export interface Notice {
+  writer: string;
+  notice: string;
+  time: string;
+}

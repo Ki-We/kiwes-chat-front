@@ -1,13 +1,15 @@
 import { useParams } from "react-router-dom";
 import { socket } from "./utils/socket";
 import { useEffect, useRef, useState } from "react";
-import { Message } from "./utils/interface";
+import { Message, Notice } from "./utils/interface";
 import { useSelector } from "react-redux";
 import "./styles/Chat.css";
 
 export default function Chat() {
   const { id } = useParams();
   const [message, setMessage] = useState<Message[]>([]);
+  const [notice, setNotice] = useState<Notice>();
+  const [isNotice, setIsNotice] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const nickname = useSelector((state: any) => state.user);
@@ -17,31 +19,32 @@ export default function Chat() {
     socket.on("msgList", (data) => {
       setMessage(data);
     });
+    socket.on("notice", (data: Notice) => setNotice(data));
     socket.on("error", (data) => {
       alert(data.msg);
       window.location.href = "/";
     });
   }, []);
   useEffect(() => {
-    socket.on("sendMsg", (data: Message) => {
-      const newList = [...message, data];
-      setMessage(newList);
-    });
+    socket.on("sendMsg", (data: Message) => setMessage([...message, data]));
     listRef.current?.scrollIntoView({ behavior: "smooth" });
     listRef.current?.scrollTo(0, listRef.current?.scrollHeight);
   }, [message]);
 
   const sendMsg = () => {
     if (inputRef.current == null) return;
-    socket.emit("sendMsg", { msg: inputRef.current.value });
 
-    socket.on("sendMsg", (data: Message) => {
-      const newList = [...message, data];
-      setMessage(newList);
-    });
+    socket.emit("sendMsg", { msg: inputRef.current.value });
+    if (isNotice) socket.emit("notice", { notice: inputRef.current.value });
   };
   return (
     <>
+      {notice && (
+        <div className="notice">
+          <strong>공지</strong> : {notice.notice} by.{notice.writer}{" "}
+          {notice.time}
+        </div>
+      )}
       <div className="chat-list" ref={listRef}>
         {message.map((m: { writer: string; msg: string; time: string }) => {
           let className = "other-chat";
@@ -61,7 +64,11 @@ export default function Chat() {
       </div>
 
       <hr />
-
+      <input
+        type="checkbox"
+        checked={isNotice}
+        onChange={(e) => setIsNotice(!isNotice)}
+      />
       <input type="text" ref={inputRef} />
       <button onClick={sendMsg}>전송</button>
     </>
