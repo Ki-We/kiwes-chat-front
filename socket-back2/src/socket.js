@@ -3,7 +3,7 @@ const { Room, Chat } = require("./model");
 const catch_error = (err, socket, msg) => {
   console.error(err);
   console.log(`err : `, msg);
-  socket.send("error", { msg });
+  socket.emit("error", { msg });
 };
 const nicknameList = {};
 module.exports = (server) => {

@@ -16,17 +16,22 @@ export default function Chat() {
 
   useEffect(() => {
     socket.emit("enterRoom", { id });
-    socket.on("msgList", (data) => {
+
+    socket.on("msgList", (data: any) => {
+      console.log(data);
       setMessage(data);
     });
-    socket.on("notice", (data: Notice) => setNotice(data));
-    socket.on("error", (data) => {
+    socket.on("error", (data: any) => {
+      console.log(data);
       alert(data.msg);
       window.location.href = "/";
     });
   }, []);
   useEffect(() => {
+    console.log(message);
+    socket.on("notice", (data: Notice) => setNotice(data));
     socket.on("sendMsg", (data: Message) => setMessage([...message, data]));
+    console.log(message);
     listRef.current?.scrollIntoView({ behavior: "smooth" });
     listRef.current?.scrollTo(0, listRef.current?.scrollHeight);
   }, [message]);
@@ -46,21 +51,23 @@ export default function Chat() {
         </div>
       )}
       <div className="chat-list" ref={listRef}>
-        {message.map((m: { writer: string; msg: string; time: string }) => {
-          let className = "other-chat";
-          if (m.writer == nickname) className = "my-chat";
-          else if (m.writer == "system") className = "system";
+        {message.map(
+          (m: { writer: string; msg: string; time: string }, idx: number) => {
+            let className = "other-chat";
+            if (m.writer == nickname) className = "my-chat";
+            else if (m.writer == "system") className = "system";
 
-          return (
-            <div key={`${m.msg}_${m.writer}`} className={className}>
-              <p>{m.writer}</p>
-              <div>
-                <span style={{ marginRight: "10px" }}>{m.msg}</span>
-                <span style={{ fontSize: "0.6em" }}>{m.time}</span>
+            return (
+              <div key={`msg_${idx}`} className={className}>
+                <p>{m.writer}</p>
+                <div>
+                  <span style={{ marginRight: "10px" }}>{m.msg}</span>
+                  <span style={{ fontSize: "0.6em" }}>{m.time}</span>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          }
+        )}
       </div>
 
       <hr />
