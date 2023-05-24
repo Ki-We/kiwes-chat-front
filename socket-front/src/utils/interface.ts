@@ -1,6 +1,7 @@
 export interface Room {
   name: string;
   id: number;
+  is_new: boolean;
 }
 
 export interface Message {

@@ -1,3 +1,13 @@
+.main {
+  display: flex;
+}
+.participants {
+  width: 20%;
+  background-color: papayawhip;
+}
+.participants > table {
+  margin: 10px;
+}
 .notice {
   background-color: yellow;
   color: green;

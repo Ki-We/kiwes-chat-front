@@ -1,6 +1,6 @@
 module.exports = (Sequelize, DataTypes) => {
   return Sequelize.define(
-    "room",
+    "user",
     {
       id: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -12,24 +12,11 @@ module.exports = (Sequelize, DataTypes) => {
         type: DataTypes.STRING(10),
         allowNull: false,
       },
-      master: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-      },
-      notice: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      participants: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        defaultValue: "[]",
-      },
     },
     {
       timestamps: true,
       freezeTableName: true,
-      tableName: "room",
+      tableName: "user",
     }
   );
 };

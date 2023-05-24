@@ -16,14 +16,19 @@ const App = () => {
 
   useEffect(() => {
     // 닉네임 초기화
-    const random1 = Math.floor(Math.random() * (adjective.length - 1));
-    const random2 = Math.floor(Math.random() * (noun.length - 1));
-    const initNickname = `${adjective[random1]} ${noun[random2]}`;
-    dispatch(setName(initNickname));
-    socket.emit("nickname", { nickname: initNickname });
+    // const random1 = Math.floor(Math.random() * (adjective.length - 1));
+    // const random2 = Math.floor(Math.random() * (noun.length - 1));
+    // const initNickname = `${adjective[random1]} ${noun[random2]}`;
+    // const initNickname = "";
+    // dispatch(setName(initNickname));
+    // socket.emit("nickname", { nickname: initNickname });
 
     socket.emit("entry", {});
-    socket.on("roomList", (data) => setRooms(data.rooms));
+    socket.on("roomList", (data) => {
+      setRooms(data.rooms);
+      console.log(data.rooms);
+    });
+    socket.on("error", (data: any) => alert(data.msg));
   }, []);
   const createRoom = () => {
     if (inputRef.current == null) return;
@@ -40,45 +45,58 @@ const App = () => {
   return (
     <>
       <div>
-        <input
-          type="text"
-          ref={nicknameRef}
-          placeholder="닉네임"
-          defaultValue={nickname}
-        />
-        <button type="button" onClick={sendNickname}>
-          설정
-        </button>
+        {nickname != "" ? (
+          <p>{nickname} 로그인 완료</p>
+        ) : (
+          <>
+            {nickname}
+            <input
+              type="text"
+              ref={nicknameRef}
+              placeholder="이름"
+              defaultValue={nickname}
+            />
+            <button type="button" onClick={sendNickname}>
+              로그인
+            </button>
+          </>
+        )}
       </div>
 
-      <div>
-        <input
-          type="text"
-          ref={inputRef}
-          name="roomName"
-          placeholder="방 이름"
-        />
-        <button type="button" onClick={createRoom}>
-          만들기
-        </button>
-      </div>
+      {nickname != "" && (
+        <>
+          <div>
+            <input
+              type="text"
+              ref={inputRef}
+              name="roomName"
+              placeholder="방 이름"
+            />
+            <button type="button" onClick={createRoom}>
+              만들기
+            </button>
+          </div>
 
-      <hr />
+          <hr />
 
-      <table border={1}>
-        <tr>
-          <th>방이름</th>
-          <th>입장</th>
-        </tr>
-        {rooms?.map((room) => (
-          <tr>
-            <td>{room.name}</td>
-            <td>
-              <Link to={`/room/${room.id}`}>입장</Link>
-            </td>
-          </tr>
-        ))}
-      </table>
+          <table border={1}>
+            <tr>
+              <th>방이름</th>
+              <th>입장</th>
+            </tr>
+            {rooms?.map((room) => (
+              <tr>
+                <td>
+                  {room.name} {room.is_new && <span>( New ) </span>}
+                </td>
+                <td>
+                  <Link to={`/room/${room.id}`}>입장</Link>
+                </td>
+              </tr>
+            ))}
+          </table>
+        </>
+      )}
     </>
   );
 };

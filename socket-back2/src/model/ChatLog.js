@@ -1,6 +1,6 @@
 module.exports = (Sequelize, DataTypes) => {
   return Sequelize.define(
-    "room",
+    "chatLog",
     {
       id: {
         type: DataTypes.INTEGER.UNSIGNED,
@@ -8,28 +8,19 @@ module.exports = (Sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      name: {
+      room: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+      },
+      user: {
         type: DataTypes.STRING(10),
         allowNull: false,
-      },
-      master: {
-        type: DataTypes.STRING(10),
-        allowNull: false,
-      },
-      notice: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      participants: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        defaultValue: "[]",
       },
     },
     {
       timestamps: true,
       freezeTableName: true,
-      tableName: "room",
+      tableName: "chatLog",
     }
   );
 };

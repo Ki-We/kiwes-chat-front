@@ -20,6 +20,8 @@ db.sequelize = sequelize;
 
 db.Room = require("./Room")(sequelize, Sequelize);
 db.Chat = require("./Chat")(sequelize, Sequelize);
+db.User = require("./User")(sequelize, Sequelize);
+db.ChatLog = require("./ChatLog")(sequelize, Sequelize);
 
 db.Room.hasOne(db.Chat, {
   foreignKey: "room_ID",
