@@ -1,10 +1,6 @@
-const { Room, Chat, User, ChatLog } = require("./model");
+const { Room, Chat, User, ChatLog, Sequelize } = require("./model");
+const { verifyToken, catch_error_socket } = require("./utils");
 
-const catch_error_socket = (err, socket, msg) => {
-  console.error(err);
-  console.log(`err : `, msg);
-  socket.emit("error", { msg });
-};
 const nicknameList = {};
 module.exports = (server) => {
   const io = require("socket.io")(server, {
@@ -19,8 +15,50 @@ module.exports = (server) => {
     socket.leave(socket.id);
     socket.join("lobby");
     // --(1)--
-    socket.on("entry", async () => {
+
+    // 최초 socket 접속 = 나의 채팅방
+    socket.on("entry", async (data) => {
+      console.log(data.token);
       console.log(`${socket.id} entry`);
+
+      const result = await verifyToken(data.token);
+      if (!result.ok) {
+        catch_error_socket(null, socket, result.msg);
+        return;
+      }
+
+      /**
+       * token이 유효할 때
+       */
+      // 1) 현재 접속자를 보여주는 nicknameList에 세팅
+      nicknameList[socket.id] = result.name;
+
+      // 2) 내가 접속해있는 방 가져오기
+      const rooms = await Room.findAll({
+        where: {
+          [Sequelize.Op.or]: [
+            {
+              participants: {
+                [Sequelize.Op.like]: `%"${result.name}"%`,
+              },
+            },
+            {
+              master: result.name,
+            },
+          ],
+        },
+      }).catch((err) => console.error(err));
+      for await (const room of rooms) {
+        room.dataValues["is_new"] = false;
+        const chat = await Chat.findOne({ where: { room_ID: room.id } });
+        const log = await ChatLog.findOne({
+          where: { room: room.id, user: result.name },
+        });
+        if (log != null && chat != null)
+          room.dataValues["is_new"] = chat.updateAt >= log.createdAt;
+      }
+
+      socket.emit("getMyRooms", { rooms });
     });
 
     socket.on("nickname", async (info) => {
@@ -29,15 +67,6 @@ module.exports = (server) => {
       else nicknameList[socket.id] = info.nickname;
 
       const rooms = await getRooms(info.nickname);
-      socket.emit("roomList", { rooms });
-    });
-    socket.on("createRoom", async (data) => {
-      await Room.create(data).catch((err) => {
-        catch_error_socket(err, socket, "Failed:create room");
-        return;
-      });
-
-      const rooms = await getRooms("");
       socket.emit("roomList", { rooms });
     });
     socket.on("enterRoom", async (data) => {
@@ -162,6 +191,27 @@ module.exports = (server) => {
       console.log(socket.room);
       delete nicknameList[socket.id];
       console.log("Server Socket Disconnected");
+    });
+    /**
+     * 실제 사용되지 않을 로직
+     */
+    socket.on("createRoom", async (data) => {
+      const result = await verifyToken(data.token);
+      if (!result.ok) {
+        catch_error_socket(null, socket, result.msg);
+        return;
+      }
+
+      /**
+       * token이 유효할 때
+       */
+      data["master"] = result.name;
+      const room = await Room.create(data).catch((err) => {
+        catch_error_socket(err, socket, "Failed:create room");
+        return;
+      });
+
+      await socket.emit("createNewRoom", { room });
     });
   });
 };
