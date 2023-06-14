@@ -25,3 +25,8 @@ export const noun = [
   "토끼",
   "양",
 ];
+
+export const logout = () => {
+  localStorage.removeItem("token");
+  location.href = "/";
+};

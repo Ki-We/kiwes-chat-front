@@ -3,18 +3,23 @@ import { Link } from "react-router-dom";
 import { socket } from "./utils/socket";
 import { Room } from "./utils/interface";
 import axios from "axios";
+import { logout } from "./utils/common";
 
 export default function RoomComponent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [myrooms, setMyRooms] = useState<Room[]>([]);
 
+  const defaultData: any = { token: localStorage.getItem("token") };
+
   useEffect(() => {
+    // 최초 socket 연결
+    socket.emit("entry", defaultData);
     initialize();
-    socket.emit("entry", {});
-    socket.on("roomList", (data) => {
-      setRooms(data.rooms);
-      console.log(data.rooms);
+
+    socket.on("getMyRooms", (data: any) => {
+      // data = { rooms: [ { Room } ]}
+      setMyRooms(data.rooms);
     });
     socket.on("error", (data: any) => alert(data.msg));
   }, []);
@@ -33,10 +38,21 @@ export default function RoomComponent() {
   const createRoom = () => {
     if (inputRef.current == null) return;
 
-    socket?.emit("createRoom", { name: inputRef.current.value });
+    socket?.emit("createRoom", {
+      ...defaultData,
+      name: inputRef.current.value,
+    });
+    /**
+     * 실제 사용되지 않을 로직
+     */
+    socket.on("createNewRoom", (data) => setRooms([...rooms, data.room]));
   };
   return (
     <>
+      <button type="button" onClick={logout}>
+        로그아웃
+      </button>{" "}
+      <br />
       <div>
         <input
           type="text"
@@ -48,7 +64,6 @@ export default function RoomComponent() {
           만들기
         </button>
       </div>
-
       <hr />
       <h5>내가 참여한 목록</h5>
       <table border={1}>
@@ -67,7 +82,6 @@ export default function RoomComponent() {
           </tr>
         ))}
       </table>
-
       <h5>전체 방 목록</h5>
       <table border={1}>
         <tr>

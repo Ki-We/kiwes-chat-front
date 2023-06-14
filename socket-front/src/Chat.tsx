@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Message, Notice } from "./utils/interface";
 import { useSelector } from "react-redux";
 import "./styles/Chat.css";
+import { logout } from "./utils/common";
 
 export default function Chat() {
   const { id } = useParams();
@@ -63,6 +64,10 @@ export default function Chat() {
   };
   return (
     <>
+      <button type="button" onClick={logout}>
+        로그아웃
+      </button>{" "}
+      <br />
       <div className="main">
         <div style={{ width: "80%" }}>
           {notice && (
@@ -124,7 +129,6 @@ export default function Chat() {
           </table>
         </div>
       </div>
-
       <hr />
       <input
         type="checkbox"
