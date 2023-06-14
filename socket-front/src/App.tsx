@@ -4,25 +4,15 @@ import { socket } from "./utils/socket";
 import { Room } from "./utils/interface";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { setName } from "./utils/action";
-import { adjective, noun } from "./utils/common";
+import axios from "axios";
 
 const App = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const nicknameRef = useRef<HTMLInputElement>(null);
-  const dispatch = useDispatch();
   const nickname = useSelector((state: any) => state.user);
 
   useEffect(() => {
-    // 닉네임 초기화
-    // const random1 = Math.floor(Math.random() * (adjective.length - 1));
-    // const random2 = Math.floor(Math.random() * (noun.length - 1));
-    // const initNickname = `${adjective[random1]} ${noun[random2]}`;
-    // const initNickname = "";
-    // dispatch(setName(initNickname));
-    // socket.emit("nickname", { nickname: initNickname });
-
     socket.emit("entry", {});
     socket.on("roomList", (data) => {
       setRooms(data.rooms);
@@ -35,11 +25,23 @@ const App = () => {
 
     socket?.emit("createRoom", { name: inputRef.current.value });
   };
-  const sendNickname = () => {
+  const sendNickname = async () => {
     if (nicknameRef.current == null) return;
-    const nickname = nicknameRef.current.value;
-    socket.emit("nickname", { nickname });
-    dispatch(setName(nickname));
+    const name = nicknameRef.current.value;
+
+    const url = `${process.env.REACT_APP_SERVER}/login`;
+    const result = await axios
+      .post(url, {
+        name,
+      })
+      .catch((err) => {
+        console.log(err);
+        alert(err.response.data.msg);
+        return;
+      });
+    console.log(result);
+    // socket.emit("nickname", { nickname });
+    // dispatch(setName(nickname));
   };
 
   return (
