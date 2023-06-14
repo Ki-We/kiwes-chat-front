@@ -1,6 +1,6 @@
 const { Room, Chat, User, ChatLog } = require("./model");
 
-const catch_error = (err, socket, msg) => {
+const catch_error_socket = (err, socket, msg) => {
   console.error(err);
   console.log(`err : `, msg);
   socket.emit("error", { msg });
@@ -25,7 +25,7 @@ module.exports = (server) => {
 
     socket.on("nickname", async (info) => {
       const user = await User.findOne({ where: { name: info.nickname } });
-      if (user == null) catch_error(null, socket, "로그인 실패");
+      if (user == null) catch_error_socket(null, socket, "로그인 실패");
       else nicknameList[socket.id] = info.nickname;
 
       const rooms = await getRooms(info.nickname);
@@ -33,7 +33,7 @@ module.exports = (server) => {
     });
     socket.on("createRoom", async (data) => {
       await Room.create(data).catch((err) => {
-        catch_error(err, socket, "Failed:create room");
+        catch_error_socket(err, socket, "Failed:create room");
         return;
       });
 
@@ -42,7 +42,7 @@ module.exports = (server) => {
     });
     socket.on("enterRoom", async (data) => {
       if (nicknameList[socket.id] == undefined) {
-        catch_error(null, socket, "닉네임 없이는 접근할 수 없습니다.");
+        catch_error_socket(null, socket, "닉네임 없이는 접근할 수 없습니다.");
         return;
       }
       socket.leave("lobby");
@@ -129,7 +129,7 @@ module.exports = (server) => {
     socket.on("dropout", async function (data) {
       const room = await Room.findOne({ where: { id: data.id } });
       if (room.master != nicknameList[socket.id]) {
-        catch_error(null, socket, "강퇴는 방장만 가능합니다.");
+        catch_error_socket(null, socket, "강퇴는 방장만 가능합니다.");
         return false;
       }
 

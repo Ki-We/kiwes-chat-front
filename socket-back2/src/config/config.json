@@ -1,0 +1,16 @@
+{
+  "local": {
+    "host": "localhost",
+    "database": "socket",
+    "username": "user",
+    "password": "1234",
+    "dialect": "mysql"
+  },
+  "prod": {
+    "host": "kiwes-rds.c27os90yo4fn.ap-northeast-2.rds.amazonaws.com",
+    "username": "chat",
+    "password": "kiweschat*#",
+    "database": "kiwes_chat",
+    "dialect": "mysql"
+  }
+}

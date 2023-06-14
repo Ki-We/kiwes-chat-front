@@ -1,12 +1,6 @@
 const Sequelize = require("sequelize");
 
-const config = {
-  host: "localhost",
-  database: "socket",
-  username: "user",
-  password: "1234",
-  dialect: "mysql",
-};
+const config = require("../config/config.json")[process.env.DB_MODE || "local"];
 const db = {};
 const sequelize = new Sequelize(
   config.database,
@@ -20,8 +14,8 @@ db.sequelize = sequelize;
 
 db.Room = require("./Room")(sequelize, Sequelize);
 db.Chat = require("./Chat")(sequelize, Sequelize);
-db.User = require("./User")(sequelize, Sequelize);
 db.ChatLog = require("./ChatLog")(sequelize, Sequelize);
+db.User = require("./User")(sequelize, Sequelize);
 
 db.Room.hasOne(db.Chat, {
   foreignKey: "room_ID",
