@@ -12,7 +12,7 @@ module.exports.catch_error_socket = (err, socket, msg) => {
 };
 
 module.exports.createToken = (user) => {
-  return jwt.sign(user, process.env.TOKEN_SECRET);
+  return jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
 };
 module.exports.verifyToken = (token) => {
   let decoded = null;
