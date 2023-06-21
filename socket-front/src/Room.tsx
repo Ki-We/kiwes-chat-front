@@ -20,6 +20,7 @@ export default function RoomComponent() {
     socket.on("getMyRooms", (data: any) => {
       // data = { rooms: [ { Room } ]}
       setMyRooms(data.rooms);
+      console.log(data.rooms);
     });
     socket.on("error", (data: any) => alert(data.msg));
   }, []);
@@ -90,11 +91,9 @@ export default function RoomComponent() {
         </tr>
         {rooms?.map((room) => (
           <tr>
+            <td>{room.name}</td>
             <td>
-              {room.name} {room.is_new && <span>( New ) </span>}
-            </td>
-            <td>
-              <Link to={`/chat/${room.id}`}>입장</Link>
+              <Link to={`/chat/${room.id}`}>참가하기</Link>
             </td>
           </tr>
         ))}

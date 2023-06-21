@@ -8,30 +8,37 @@ import { logout } from "./utils/common";
 
 export default function Chat() {
   const { id } = useParams();
+  const [nickname, setNickname] = useState<string>("");
+  const [isMaster, setIsMaster] = useState<boolean>(false);
   const [message, setMessage] = useState<Message[]>([]);
   const [notice, setNotice] = useState<Notice>();
+  const [master, setMaster] = useState<string>();
   const [isNotice, setIsNotice] = useState<boolean>(false);
-  const [master, setMaster] = useState<string>("");
   const [participants, setParticipants] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const nickname = useSelector((state: any) => state.user);
+
+  const defaultData: any = { token: localStorage.getItem("token") };
 
   const dropOut = (name: string) => {
-    socket.emit("dropout", { id, name });
+    socket.emit("dropout", { ...defaultData, id, name });
 
     const newList: string[] = participants.filter((p) => p !== name);
     setParticipants(newList);
   };
 
   useEffect(() => {
-    socket.emit("enterRoom", { id });
+    socket.emit("enterRoom", {
+      ...defaultData,
+      id,
+    });
+    socket.on("enterRoom", ({ name }) => {
+      setNickname(name);
+    });
 
-    socket.on("dropout", (data: any) => {
-      if (data.name == nickname) {
-        alert("강퇴당하셨습니다.");
-        window.location.href = "/";
-      }
+    socket.on("dropout", () => {
+      alert("강퇴당하셨습니다.");
+      window.location.href = "/";
     });
     socket.on("msgList", (data: any) => {
       console.log(data);
@@ -42,16 +49,16 @@ export default function Chat() {
       alert(data.msg);
       window.location.href = "/";
     });
-    socket.on("participants", (data) => {
-      setMaster(data.master);
-      setParticipants(data.participants);
+    socket.on("participants", ({ participants, master }) => {
+      setMaster(master);
+      setParticipants(participants);
     });
+    socket.on("isMaster", () => setIsMaster(true));
   }, []);
   useEffect(() => {
-    console.log(message);
     socket.on("notice", (data: Notice) => setNotice(data));
     socket.on("sendMsg", (data: Message) => setMessage([...message, data]));
-    console.log(message);
+
     listRef.current?.scrollIntoView({ behavior: "smooth" });
     listRef.current?.scrollTo(0, listRef.current?.scrollHeight);
   }, [message]);
@@ -104,14 +111,18 @@ export default function Chat() {
             <thead>
               <tr>
                 <td>이름</td>
-                {master == nickname && <td>강퇴</td>}
+                {isMaster && <td>강퇴</td>}
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td>{master}</td>
+                {isMaster && <td />}
+              </tr>
               {participants?.map((p: string) => (
                 <tr>
                   <td>{p}</td>
-                  {master == nickname && (
+                  {isMaster && master != p && (
                     <td>
                       <button
                         type="button"

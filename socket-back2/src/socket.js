@@ -55,25 +55,21 @@ module.exports = (server) => {
           where: { room: room.id, user: result.name },
         });
         if (log != null && chat != null)
-          room.dataValues["is_new"] = chat.updateAt >= log.createdAt;
+          room.dataValues["is_new"] = chat.updatedAt >= log.createdAt;
       }
 
       socket.emit("getMyRooms", { rooms });
     });
 
-    socket.on("nickname", async (info) => {
-      const user = await User.findOne({ where: { name: info.nickname } });
-      if (user == null) catch_error_socket(null, socket, "로그인 실패");
-      else nicknameList[socket.id] = info.nickname;
-
-      const rooms = await getRooms(info.nickname);
-      socket.emit("roomList", { rooms });
-    });
     socket.on("enterRoom", async (data) => {
-      if (nicknameList[socket.id] == undefined) {
-        catch_error_socket(null, socket, "닉네임 없이는 접근할 수 없습니다.");
+      const result = await verifyToken(data.token);
+      if (!result.ok) {
+        catch_error_socket(null, socket, "로그인 한 사용자만 접근 가능합니다.");
         return;
       }
+      // 이름 전달
+      socket.emit("enterRoom", { name: result.name });
+      nicknameList[socket.id] = result.name;
       socket.leave("lobby");
 
       socket.room = data.id;
@@ -97,7 +93,10 @@ module.exports = (server) => {
 
       io.in(data.id).emit("msgList", msgs);
 
-      if (!participants.includes(nicknameList[socket.id])) {
+      if (
+        nicknameList[socket.id] != roomInfo.master &&
+        !participants.includes(nicknameList[socket.id])
+      ) {
         io.in(data.id).emit("sendMsg", {
           writer: "system",
           msg: `${nicknameList[socket.id] || socket.id}님이 입장하셨습니다.`,
@@ -109,14 +108,40 @@ module.exports = (server) => {
           { where: { id: data.id } }
         );
       }
-      // 새로운 사용자 입장 ( 입장 목록 업데이트 )
+
+      // 사용자 목록 전달
       io.in(data.id).emit("participants", {
         master: roomInfo.master,
         participants,
       });
+      // 마스터에게만 Event 전달
+      if (nicknameList[socket.id] == roomInfo.master) socket.emit("isMaster");
 
       if (roomInfo.notice != null)
         io.in(data.id).emit("notice", JSON.parse(roomInfo.notice));
+    });
+    socket.on("dropout", async function (data) {
+      const room = await Room.findOne({ where: { id: data.id } });
+      if (room.master != nicknameList[socket.id]) {
+        catch_error_socket(null, socket, "강퇴는 방장만 가능합니다.");
+        return false;
+      }
+
+      const origin = JSON.parse(room.participants);
+      const participants = origin.filter((p) => p !== data.name);
+      await Room.update(
+        { participants: JSON.stringify(participants) },
+        { where: { id: data.id } }
+      );
+      io.in(data.id).emit("participants", {
+        master: room.master,
+        participants,
+      });
+
+      const dropId = Object.keys(nicknameList).find(
+        (key) => nicknameList[key] === data.name
+      );
+      // io.to(dropId).emit("dropout"); 동작 x
     });
     socket.on("sendMsg", async (data) => {
       const room = socket.rooms.values().next().value;
@@ -153,22 +178,6 @@ module.exports = (server) => {
         { where: { id: room } }
       );
       io.in(room).emit("notice", notice);
-    });
-
-    socket.on("dropout", async function (data) {
-      const room = await Room.findOne({ where: { id: data.id } });
-      if (room.master != nicknameList[socket.id]) {
-        catch_error_socket(null, socket, "강퇴는 방장만 가능합니다.");
-        return false;
-      }
-
-      const origin = JSON.parse(room.participants);
-      const participants = origin.filter((p) => p !== data.name);
-      await Room.update(
-        { participants: JSON.stringify(participants) },
-        { where: { id: data.id } }
-      );
-      io.in(data.id).emit("dropout", { name: data.name });
     });
 
     socket.on("disconnect", async function () {
