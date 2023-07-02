@@ -121,6 +121,33 @@ module.exports = (server) => {
       if (roomInfo.notice != null)
         io.in(data.id).emit("notice", JSON.parse(roomInfo.notice));
     });
+    socket.on("exit", async function (data) {
+      const result = await verifyToken(data.token);
+      if (!result.ok) {
+        catch_error_socket(null, socket, "로그인 한 사용자만 접근 가능합니다.");
+        return;
+      }
+
+      const room = await Room.findOne({ where: { id: data.id } });
+      const origin = JSON.parse(room.participants);
+      const participants = origin.filter((p) => p !== result.name);
+      await Room.update(
+        { participants: JSON.stringify(participants) },
+        { where: { id: data.id } }
+      );
+      io.in(data.id).emit("participants", {
+        master: room.master,
+        participants,
+      });
+
+      const time = getTime();
+      io.in(data.id).emit("sendMsg", {
+        writer: "system",
+        msg: `${result.name}님이 퇴장하셨습니다.`,
+        time,
+      });
+      socket.leave(room.id);
+    });
     socket.on("dropout", async function (data) {
       const result = await verifyToken(data.token);
       if (!result.ok) {
@@ -146,10 +173,9 @@ module.exports = (server) => {
       });
 
       const time = getTime();
-      io.to(data.id).emit("kickedout", data.name); // 특정 사용자에게만 안내
       io.in(data.id).emit("sendMsg", {
         writer: "system",
-        msg: `${data.name}님이 강퇴당하셨습니다.`,
+        msg: `${result.name}님이 퇴장하였습니다.`,
         time,
       });
     });

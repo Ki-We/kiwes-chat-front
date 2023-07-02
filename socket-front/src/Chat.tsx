@@ -69,6 +69,10 @@ export default function Chat() {
     socket.emit("sendMsg", { msg: inputRef.current.value });
     if (isNotice) socket.emit("notice", { notice: inputRef.current.value });
   };
+  const exit = () => {
+    socket.emit("exit", { ...defaultData, id });
+    window.location.href = "/rooms";
+  };
   return (
     <>
       <button type="button" onClick={logout}>
@@ -148,6 +152,7 @@ export default function Chat() {
       />
       <input type="text" ref={inputRef} />
       <button onClick={sendMsg}>전송</button>
+      <button onClick={exit}>나가기</button>
     </>
   );
 }
