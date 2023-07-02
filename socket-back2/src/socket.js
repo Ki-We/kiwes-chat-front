@@ -54,8 +54,9 @@ module.exports = (server) => {
         const log = await ChatLog.findOne({
           where: { room: room.id, user: result.name },
         });
+        log != null && console.log(log.createdAt);
         if (log != null && chat != null)
-          room.dataValues["is_new"] = chat.updatedAt >= log.createdAt;
+          room.dataValues["is_new"] = chat.updatedAt <= log.createdAt;
       }
 
       socket.emit("getMyRooms", { rooms });
@@ -82,12 +83,12 @@ module.exports = (server) => {
       }
       const time = getTime();
 
-      const initChat = { room_ID: data.id, chat: "[]" };
+      const initChat = { room_ID: parseInt(data.id), chat: "[]" };
       const chatInfo = await Chat.findCreateFind({
         initChat,
-        where: { room_ID: data.id },
+        where: { room_ID: parseInt(data.id) },
       });
-      const roomInfo = await Room.findOne({ where: { id: data.id } });
+      const roomInfo = await Room.findOne({ where: { id: parseInt(data.id) } });
       const participants = JSON.parse(roomInfo.participants);
       const msgs = JSON.parse(chatInfo[0].chat);
 
@@ -121,8 +122,14 @@ module.exports = (server) => {
         io.in(data.id).emit("notice", JSON.parse(roomInfo.notice));
     });
     socket.on("dropout", async function (data) {
+      const result = await verifyToken(data.token);
+      if (!result.ok) {
+        catch_error_socket(null, socket, "로그인 한 사용자만 접근 가능합니다.");
+        return;
+      }
+
       const room = await Room.findOne({ where: { id: data.id } });
-      if (room.master != nicknameList[socket.id]) {
+      if (room.master != result.name) {
         catch_error_socket(null, socket, "강퇴는 방장만 가능합니다.");
         return false;
       }
@@ -138,10 +145,13 @@ module.exports = (server) => {
         participants,
       });
 
-      const dropId = Object.keys(nicknameList).find(
-        (key) => nicknameList[key] === data.name
-      );
-      // io.to(dropId).emit("dropout"); 동작 x
+      const time = getTime();
+      io.to(data.id).emit("kickedout", data.name); // 특정 사용자에게만 안내
+      io.in(data.id).emit("sendMsg", {
+        writer: "system",
+        msg: `${data.name}님이 강퇴당하셨습니다.`,
+        time,
+      });
     });
     socket.on("sendMsg", async (data) => {
       const room = socket.rooms.values().next().value;
@@ -182,9 +192,6 @@ module.exports = (server) => {
 
     socket.on("disconnect", async function () {
       // chatLog 에 추가
-      console.log("--------------------------------------");
-      console.log(socket.room);
-      console.log(nicknameList[socket.id]);
       if (nicknameList[socket.id] != undefined) {
         const log = await ChatLog.findOne({
           where: { user: nicknameList[socket.id] },
@@ -197,7 +204,6 @@ module.exports = (server) => {
         }
       }
 
-      console.log(socket.room);
       delete nicknameList[socket.id];
       console.log("Server Socket Disconnected");
     });

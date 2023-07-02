@@ -2,7 +2,6 @@ import { useParams } from "react-router-dom";
 import { socket } from "./utils/socket";
 import { useEffect, useRef, useState } from "react";
 import { Message, Notice } from "./utils/interface";
-import { useSelector } from "react-redux";
 import "./styles/Chat.css";
 import { logout } from "./utils/common";
 
@@ -36,7 +35,8 @@ export default function Chat() {
       setNickname(name);
     });
 
-    socket.on("dropout", () => {
+    socket.on("kickedout", (name) => {
+      if (name != nickname) return;
       alert("강퇴당하셨습니다.");
       window.location.href = "/";
     });

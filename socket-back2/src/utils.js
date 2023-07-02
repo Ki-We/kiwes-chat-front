@@ -27,16 +27,16 @@ module.exports.verifyToken = (token) => {
 
     switch (err.name) {
       case "TokenExpiredError":
-        error.code = cst.ERRORCODE_EXPIRED;
-        error.msg = cst.ERRORMSG_TOKENEXPIRED;
+        error.code = 400;
+        error.msg = "토큰이 만료되었습니다.";
         break;
       case "JsonWebTokenError":
-        error.code = cst.ERRORCODE_UNAUTHORIZED;
-        error.msg = cst.ERRORMSG_WRONGTOKEN;
+        error.code = 400;
+        error.msg = "토큰이 유효하지 않습니다.";
         break;
       default:
-        error.code = cst.ERRORCODE_BAD_REQUEST;
-        error.msg = cst.ERRORMSG_UNKNOWN;
+        error.code = 400;
+        error.msg = "알 수 없는 문제가 발생했습니다.";
         break;
     }
 
