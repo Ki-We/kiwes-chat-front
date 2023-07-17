@@ -46,7 +46,6 @@ module.exports = (server) => {
       console.log(`${userID} ${roomID} entry`);
       nicknameList[socket.id] = userID; // socket.id와 전달받은 userID 매핑
 
-      console.log(getCurrentRoom(socket));
       socket.leave("lobby");
       socket.join(roomID);
 
@@ -65,7 +64,8 @@ module.exports = (server) => {
         msg: msg,
         time: getTime(),
       };
-      const room = await Chat.findOne({ roomID: socket.room });
+
+      const room = await Chat.findOne({ roomID: getCurrentRoom(socket) });
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
@@ -76,7 +76,7 @@ module.exports = (server) => {
 
     // 5. 채팅방 나가기 ( 채팅 목록에서 나가기. 실제 퇴장 x )
     socket.on("leave", async (data) => {
-      socket.leave(socket.room);
+      socket.leave(getCurrentRoom(socket));
       socket.join("lobby");
     });
 
@@ -88,13 +88,14 @@ module.exports = (server) => {
         msg: `${name} 님이 강퇴당하였습니다.`,
         time: getTime(),
       };
-      const room = await Chat.findOne({ roomID: socket.room });
+      const currentRoom = getCurrentRoom(socket);
+      const room = await Chat.findOne({ roomID: currentRoom });
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
       await room.save();
 
-      io.in(socket.room).emit("sendMSG", content);
+      io.in(currentRoom).emit("sendMSG", content);
     });
     socket.on("exit", async (data) => {
       // 자진 모임에 불참하기를 눌렀을 때 ( 스스로 나가기 )
@@ -104,13 +105,14 @@ module.exports = (server) => {
         msg: `${name} 님이 퇴장하였습니다.`,
         time: getTime(),
       };
-      const room = await Chat.findOne({ roomID: socket.room });
+      const currentRoom = getCurrentRoom(socket);
+      const room = await Chat.findOne({ roomID: currentRoom });
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
       await room.save();
 
-      io.in(socket.room).emit("sendMSG", content);
+      io.in(currentRoom).emit("sendMSG", content);
     });
 
     socket.on("disconnect", async function () {
@@ -118,10 +120,11 @@ module.exports = (server) => {
       if (nicknameList[socket.id] != undefined) {
         const log = await Log.findOne({ userID: nicknameList[socket.id] });
 
-        if (socket.room != undefined && log == null) {
+        const currentRoom = getCurrentRoom(socket);
+        if (currentRoom != undefined && log == null) {
           const data = {
             userID: nicknameList[socket.id],
-            roomID: socket.room,
+            roomID: currentRoom,
           };
           const newLog = Log.create(data);
           try {
@@ -137,19 +140,10 @@ module.exports = (server) => {
     });
   });
 };
-const getRooms = async (user) => {
-  const rooms = await Room.findAll().catch((err) => console.error(err));
-  for await (const room of rooms) {
-    room.dataValues["is_new"] = false;
-    const chat = await Chat.findOne({ where: { room_ID: room.id } });
-    const log = await ChatLog.findOne({ where: { room: room.id, user } });
-    if (log != null && chat != null)
-      room.dataValues["is_new"] = chat.updatedAt >= log.createdAt;
-  }
 
-  return rooms;
+const getCurrentRoom = (socket) => {
+  return [...socket.rooms][0];
 };
-
 const getTime = () => {
   const date = new Date();
   let hour = date.getHours();
@@ -161,16 +155,4 @@ const getTime = () => {
 
   time += ` ${hour}:${date.getMinutes()}`;
   return time;
-};
-
-const getCurrentRoom = (socket) => {
-  let currentRoom = "";
-  let socketRooms = Object.keys(socket.rooms);
-  for (let i = 0; i < socketRooms.length; i++) {
-    if (socketRooms[i].indexOf("Room_") !== -1) {
-      currentRoom = socketRooms[i];
-      break;
-    }
-  }
-  return currentRoom;
 };

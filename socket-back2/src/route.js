@@ -1,5 +1,5 @@
 const { Room, User } = require("./model");
-const { Chat } = require("./model2");
+const { Chat, Log } = require("./model2");
 const { catch_error, createToken } = require("./utils");
 
 const express = require("express");
@@ -26,7 +26,18 @@ router.post("/room", async (req, res) => {
     res.send({ msg: "room is already created" });
   }
 });
-router.post("/list", async (req, res) => {});
+router.post("/list", async (req, res) => {
+  const { userID } = req.body;
+
+  const logs = await Log.find({ userID });
+
+  for await (const log of logs) {
+    log["is_new"] = false;
+    const room = await Chat.findOne({ roomID: log.roomID });
+    if (room != null) log["is_new"] = room.updatedAt <= log.createdAt;
+  }
+  res.send({ logs });
+});
 
 // 이전 삭제 필요 로직
 

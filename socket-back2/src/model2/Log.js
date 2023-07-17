@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 
 const LogSchema = new mongoose.Schema(
   {
-    room_ID: {
+    roomID: {
       type: Number,
       required: true,
     },
-    user_ID: {
+    userID: {
       type: Number,
       required: true,
     },
