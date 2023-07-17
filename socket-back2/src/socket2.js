@@ -51,9 +51,9 @@ module.exports = (server) => {
 
       // 방 가져오기
       const room = await Chat.findOne({ roomID });
-      const chat = JSON.parse(room.chat);
 
-      socket.emit("msgList", chat);
+      socket.emit("msgList", { chat: JSON.parse(room.chat) });
+      socket.emit("notice", { notice: JSON.parse(room.notice) });
     });
 
     // 4. 채팅 진행
@@ -65,13 +65,31 @@ module.exports = (server) => {
         time: getTime(),
       };
 
-      const room = await Chat.findOne({ roomID: getCurrentRoom(socket) });
+      const currentRoom = getCurrentRoom(socket);
+      const room = await Chat.findOne({ roomID: currentRoom });
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
       await room.save();
 
-      io.in(socket.room).emit("sendMSG", content);
+      io.in(currentRoom).emit("sendMSG", content);
+    });
+
+    // 4-1. 공지
+    socket.on("notice", async (data) => {
+      const { msg, name } = data;
+      const content = {
+        writer: name,
+        msg: msg,
+        time: getTime(),
+      };
+
+      const currentRoom = getCurrentRoom(socket);
+      const room = await Chat.findOne({ roomID: currentRoom });
+      room.notice = JSON.stringify(notice);
+      await room.save();
+
+      io.in(currentRoom).emit("notice", content);
     });
 
     // 5. 채팅방 나가기 ( 채팅 목록에서 나가기. 실제 퇴장 x )
