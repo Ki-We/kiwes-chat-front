@@ -2,17 +2,16 @@ const mongoose = require("mongoose");
 
 const ChatSchema = new mongoose.Schema(
   {
+    roomID: {
+      type: Number,
+      required: true,
+    },
     chat: {
       type: String,
       required: true,
     },
-    room_ID: {
-      type: Number,
-      required: true,
-    },
     notice: {
       type: String,
-      required: true,
     },
   },
   { timestamps: true }

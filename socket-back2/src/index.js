@@ -25,7 +25,7 @@ sequelize
     console.log(err);
   });
 
-require("./socket")(http);
+require("./socket2")(http);
 app.use("/", require("./route"));
 
 http.listen(process.env.PORT, function () {

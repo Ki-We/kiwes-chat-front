@@ -6,6 +6,7 @@ import { Provider } from "react-redux";
 import { createStore } from "redux";
 import rootReducer from "./store/rootReducer";
 import RoomComponent from "./Room";
+import Test from "./Test";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -18,6 +19,7 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />}></Route>
+        <Route path="/test" element={<Test />}></Route>
         <Route path="/chat/:id" element={<Chat />}></Route>
         <Route path="/room" element={<RoomComponent />}></Route>
       </Routes>
