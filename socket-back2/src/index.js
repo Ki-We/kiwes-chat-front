@@ -15,15 +15,6 @@ app.use(
 );
 
 dotenv.config({ path: path.join(__dirname, "./.env") });
-const sequelize = require("./model").sequelize;
-sequelize
-  .sync()
-  .then(() => {
-    console.log("DB connect success");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
 
 require("./socket2")(http);
 app.use("/", require("./route"));

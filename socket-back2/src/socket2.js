@@ -77,9 +77,8 @@ module.exports = (server) => {
 
     // 4-1. 공지
     socket.on("notice", async (data) => {
-      const { msg, name } = data;
+      const { msg } = data;
       const content = {
-        writer: name,
         msg: msg,
         time: getTime(),
       };
