@@ -1,11 +1,8 @@
 name: Docker Build and Push
 
 on:
-  pull_request:
-    types:
-      - closed
-    branches:
-      - devel
+  push:
+    branches: [devel]
 
 jobs:
   build-and-push:
