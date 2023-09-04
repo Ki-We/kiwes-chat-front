@@ -12,7 +12,7 @@ router.post("/room", async (req, res) => {
     const data = {
       roomID,
       chat: "[]",
-      notice: "",
+      notice: "[]",
     };
     const newChat = new Chat(data);
     try {

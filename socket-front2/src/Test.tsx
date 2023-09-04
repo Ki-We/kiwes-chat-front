@@ -7,7 +7,7 @@ export default function Test() {
   const userID = 1;
   useEffect(() => {
     socket.on("msgList", (data: any) => {
-      console.log(`msgList : ${data}`);
+      console.log("msgList : ", data);
     });
     socket.on("error", (data: any) => {
       console.log(data);
