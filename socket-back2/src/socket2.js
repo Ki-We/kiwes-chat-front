@@ -52,8 +52,14 @@ module.exports = (server) => {
       // 방 가져오기
       const room = await Chat.findOne({ roomID });
 
-      socket.emit("msgList", { chat: JSON.parse(room.chat) });
-      socket.emit("notice", { notice: JSON.parse(room.notice) });
+      if (room != null) {
+        socket.emit("msgList", { chat: JSON.parse(room.chat) });
+        socket.emit("notice", { notice: JSON.parse(room.notice) });
+      } else {
+        socket.emit("error", {
+          msg: "[Err01] enter. roomID 로 만들어진 채팅방이 존재하지 않습니다.",
+        });
+      }
     });
 
     // 4. 채팅 진행
@@ -67,6 +73,14 @@ module.exports = (server) => {
 
       const currentRoom = getCurrentRoom(socket);
       const room = await Chat.findOne({ roomID: currentRoom });
+
+      if (room == null) {
+        socket.emit("error", {
+          msg: "[Err02] sendMSG. currentRoom에 해당하는 채팅방이 존재하지 않습니다.",
+        });
+        return;
+      }
+
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
@@ -85,6 +99,14 @@ module.exports = (server) => {
 
       const currentRoom = getCurrentRoom(socket);
       const room = await Chat.findOne({ roomID: currentRoom });
+
+      if (room == null) {
+        socket.emit("error", {
+          msg: "[Err03] notice. currentRoom에 해당하는 채팅방이 존재하지 않습니다.",
+        });
+        return;
+      }
+
       room.notice = JSON.stringify(notice);
       await room.save();
 
@@ -163,13 +185,16 @@ const getCurrentRoom = (socket) => {
 };
 const getTime = () => {
   const date = new Date();
-  let hour = date.getHours();
-  let time = "";
-  if (hour > 12) {
-    hour -= 12;
-    time += "오후";
-  } else time += "오전";
 
-  time += ` ${hour}:${date.getMinutes()}`;
+  const month = changeFormatEach(date.getMonth() + 1);
+  const day = changeFormatEach(date.getDate());
+  const hour = changeFormatEach(date.getHours());
+  const minute = changeFormatEach(date.getMinutes());
+
+  return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
+};
+
+const changeFormatEach = (time) => {
+  time = time >= 10 ? time : "0" + time;
   return time;
 };
