@@ -43,3 +43,18 @@ module.exports.verifyToken = (token) => {
     return error;
   }
 };
+
+module.exports.getTime = () => {
+  const date = new Date();
+
+  const month = changeFormatEach(date.getMonth() + 1);
+  const day = changeFormatEach(date.getDate());
+  const hour = changeFormatEach(date.getHours());
+  const minute = changeFormatEach(date.getMinutes());
+
+  return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
+};
+const changeFormatEach = (time) => {
+  time = time >= 10 ? time : "0" + time;
+  return time;
+};

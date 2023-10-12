@@ -6,7 +6,7 @@ const LogSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    userID: {
+    userId: {
       type: Number,
       required: true,
     },

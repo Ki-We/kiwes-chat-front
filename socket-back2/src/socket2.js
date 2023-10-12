@@ -1,5 +1,5 @@
 const { Chat, Log } = require("./model2");
-const { verifyToken, catch_error_socket } = require("./utils");
+const { getTime } = require("./utils");
 
 const nicknameList = {};
 module.exports = (server) => {
@@ -16,35 +16,12 @@ module.exports = (server) => {
     socket.leave(socket.id);
     socket.join("lobby");
     // --(1)--
-
-    // 최종 로직
-    // 기타 - 관리자 승인
-    socket.on("permit", async (data) => {
-      // 관리자가 승인할 시 해당 채팅방에 system 메세지 추가 필요
-      // {roomID: number, user:string}
-      const { roomID, user } = data;
-      const room = await Chat.findOne({ roomID });
-      const chat = JSON.parse(room.chat);
-
-      socket.room = roomID;
-      socket.join(roomID);
-
-      const msg = {
-        writer: "system",
-        msg: `${user} 님이 입장하셨습니다.`,
-        time: getTime(),
-      };
-      io.in(roomID).emit("sendMSG", msg);
-      chat.push(msg);
-      room.chat = JSON.stringify(chat);
-      await room.save();
-    });
     // 3. 채팅 입장
     socket.on("enter", async (data) => {
-      const { roomID, userID } = data;
+      const { roomID, userId } = data;
 
-      console.log(`${userID} ${roomID} entry`);
-      nicknameList[socket.id] = userID; // socket.id와 전달받은 userID 매핑
+      console.log(`${userId} ${roomID} entry`);
+      nicknameList[socket.id] = userId; // socket.id와 전달받은 userId 매핑
 
       socket.leave("lobby");
       socket.join(roomID);
@@ -52,21 +29,20 @@ module.exports = (server) => {
       // 방 가져오기
       const room = await Chat.findOne({ roomID });
 
-      if (room != null) {
-        socket.emit("msgList", { chat: JSON.parse(room.chat) });
-        socket.emit("notice", { notice: JSON.parse(room.notice) });
-      } else {
-        socket.emit("error", {
+      if (room == null) {
+        return socket.emit("error", {
           msg: "[Err01] enter. roomID 로 만들어진 채팅방이 존재하지 않습니다.",
         });
       }
+      socket.emit("msgList", { chat: JSON.parse(room.chat) });
+      socket.emit("notice", { notice: JSON.parse(room.notice) });
     });
 
     // 4. 채팅 진행
     socket.on("sendMSG", async (data) => {
-      const { msg, name } = data;
+      const { msg, userId } = data;
       const content = {
-        writer: name,
+        userId: userId,
         msg: msg,
         time: getTime(),
       };
@@ -75,10 +51,9 @@ module.exports = (server) => {
       const room = await Chat.findOne({ roomID: currentRoom });
 
       if (room == null) {
-        socket.emit("error", {
+        return socket.emit("error", {
           msg: "[Err02] sendMSG. currentRoom에 해당하는 채팅방이 존재하지 않습니다.",
         });
-        return;
       }
 
       const chat = JSON.parse(room.chat);
@@ -121,14 +96,25 @@ module.exports = (server) => {
 
     socket.on("kickedout", async (data) => {
       // 강퇴당했을 때
+
+      console.log("-------kickedout------");
       const { name } = data;
       const content = {
-        writer: "system",
+        userId: 0, // userId 는 system을 의미
         msg: `${name} 님이 강퇴당하였습니다.`,
         time: getTime(),
       };
       const currentRoom = getCurrentRoom(socket);
+      console.log(`currentRoom : ${currentRoom}`);
+
       const room = await Chat.findOne({ roomID: currentRoom });
+
+      if (room == null) {
+        return socket.emit("error", {
+          msg: "[Err04] kickedOut. currentRoom에 해당하는 채팅방이 존재하지 않습니다.",
+        });
+      }
+
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
@@ -137,15 +123,21 @@ module.exports = (server) => {
       io.in(currentRoom).emit("sendMSG", content);
     });
     socket.on("exit", async (data) => {
-      // 자진 모임에 불참하기를 눌렀을 때 ( 스스로 나가기 )
       const { name } = data;
       const content = {
-        writer: "system",
+        userId: 0,
         msg: `${name} 님이 퇴장하였습니다.`,
         time: getTime(),
       };
       const currentRoom = getCurrentRoom(socket);
       const room = await Chat.findOne({ roomID: currentRoom });
+
+      if (room == null) {
+        return socket.emit("error", {
+          msg: "[Err05] exit. currentRoom에 해당하는 채팅방이 존재하지 않습니다.",
+        });
+      }
+
       const chat = JSON.parse(room.chat);
       chat.push(content);
       room.chat = JSON.stringify(chat);
@@ -156,13 +148,18 @@ module.exports = (server) => {
 
     socket.on("disconnect", async function () {
       // chatLog 에 추가
+      console.log("-------disconnect------");
+      console.log(
+        `id : ${socket.id} nickname : ${nicknameList[socket.id]} disconnected`
+      );
       if (nicknameList[socket.id] != undefined) {
-        const log = await Log.findOne({ userID: nicknameList[socket.id] });
-
+        const log = await Log.findOne({ userId: nicknameList[socket.id] });
         const currentRoom = getCurrentRoom(socket);
+        console.log(`currentRoom : ${currentRoom}`);
+
         if (currentRoom != undefined && log == null) {
           const data = {
-            userID: nicknameList[socket.id],
+            userId: nicknameList[socket.id],
             roomID: currentRoom,
           };
           const newLog = Log.create(data);
@@ -182,19 +179,4 @@ module.exports = (server) => {
 
 const getCurrentRoom = (socket) => {
   return [...socket.rooms][0];
-};
-const getTime = () => {
-  const date = new Date();
-
-  const month = changeFormatEach(date.getMonth() + 1);
-  const day = changeFormatEach(date.getDate());
-  const hour = changeFormatEach(date.getHours());
-  const minute = changeFormatEach(date.getMinutes());
-
-  return `${date.getFullYear()}-${month}-${day} ${hour}:${minute}`;
-};
-
-const changeFormatEach = (time) => {
-  time = time >= 10 ? time : "0" + time;
-  return time;
 };
