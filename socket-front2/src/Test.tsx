@@ -3,8 +3,8 @@ import { socket } from "./utils/socket";
 import { useEffect, useRef } from "react";
 
 export default function Test() {
-  const roomID = 1;
-  const userId = 8;
+  const roomID = 2;
+  const userId = 1;
   useEffect(() => {
     socket.emit("enter", { roomID, userId });
     socket.on("msgList", (data: any) => {

@@ -102,7 +102,7 @@ module.exports = (server) => {
       // 강퇴당했을 때
 
       console.log("-------kickedout------");
-      const { name } = data;
+      const { userId, name } = data;
       const content = {
         userId: 0, // userId 는 system을 의미
         msg: `${name} 님이 강퇴당하였습니다.`,
@@ -125,6 +125,7 @@ module.exports = (server) => {
       await room.save();
 
       io.in(currentRoom).emit("sendMSG", content);
+      io.in(currentRoom).emit("kickedout", { userId });
     });
     socket.on("exit", async (data) => {
       const { name } = data;
