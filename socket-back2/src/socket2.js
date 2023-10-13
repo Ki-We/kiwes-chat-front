@@ -19,6 +19,7 @@ module.exports = (server) => {
     // 3. 채팅 입장
     socket.on("enter", async (data) => {
       const { roomID, userId } = data;
+      console.log(socket.rooms);
 
       console.log(`${userId} ${roomID} entry`);
       nicknameList[socket.id] = userId; // socket.id와 전달받은 userId 매핑
@@ -40,6 +41,9 @@ module.exports = (server) => {
 
     // 4. 채팅 진행
     socket.on("sendMSG", async (data) => {
+      console.log(`${nicknameList[socket.id]} - ${socket.id}가 보냄`);
+      console.log("socket.rooms : ", socket.rooms);
+      console.log("현재 room 상황 io.rooms : ", io.sockets.adapter.rooms);
       const { msg, userId } = data;
       const content = {
         userId: userId,
