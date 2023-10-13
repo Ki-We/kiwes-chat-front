@@ -5,7 +5,7 @@ const nicknameList = {};
 module.exports = (server) => {
   const io = require("socket.io")(server, {
     cors: {
-      origin: process.env.CLIENT_HOST,
+      origin: "*",
       credentials: true,
     },
   });
