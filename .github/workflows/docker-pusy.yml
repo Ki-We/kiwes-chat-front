@@ -24,7 +24,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && steps.pr.outputs.merged == 'true' }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        # uses: docker/build-push-action@v2
         run: |
           echo "Building and pushing Docker image..."
           docker build -t kyuri99/kiwes:latest ./socket-back2
