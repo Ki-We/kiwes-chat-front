@@ -3,7 +3,9 @@ const { catch_error, getTime } = require("./utils");
 
 const express = require("express");
 const router = express.Router();
-
+router.get("/test", (req,res) => {
+  res.send("Success to connect test")
+})
 router.post("/room", async (req, res) => {
   const { clubId } = req.body;
   const chat = await Chat.findOne({ roomID: clubId });
