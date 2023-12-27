@@ -25,7 +25,7 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
-         run: |
+        run: |
           echo "Building and pushing Docker image..."
           docker build -t kyuri99/kiwes:latest ./socket-back2
           docker push kyuri99/kiwes:latest
